@@ -6,8 +6,6 @@ module.exports.commands = [];
 module.exports.events = ["guildMemberAdd"];
 module.exports.actions = function (type, cmd, body, obj) {
   if (type == "guildMemberAdd" && obj[0].id == "574949938929074186") {
-    // Autorole
-    obj[1].addRole("574950105195741204", "Autorole");
     // Welcome Message
     bot.createMessage("574950095301115914", {
       content: obj[1].mention,
