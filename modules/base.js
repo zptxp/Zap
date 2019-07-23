@@ -62,6 +62,9 @@ module.exports.actions = function (type, cmd, body, obj) {
         if (body == "base") {
           clearInterval(base);
         }
+        if (body == "tickets") {
+          clearInterval(require("./tickets.js").tickets);
+        }
         mArr[number] = reload("./" + mArr[number].name + ".js");
         console.log("[Modules] Module " + mArr[number].name + " was reloaded successfully.");
         obj.channel.createMessage("Module `" + mArr[number].name + "` was reloaded successfully.");
