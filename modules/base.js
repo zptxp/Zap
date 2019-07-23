@@ -118,7 +118,7 @@ module.exports.actions = function (type, cmd, body, obj) {
       }
     }
     else if (split[0].toLowerCase() == "remove") {
-      if (parseInt(split[1], 10) > settings.get("status").length || parseInt(split[1], 10) < 1) {
+      if (parseInt(split[1], 10) > settings.get("status").length || parseInt(split[1], 10) < 1 || parseInt(split[1], 10) != parseInt(split[1], 10)) {
         obj.channel.createMessage("Invalid index. Try using `status list` to find the status you want to remove.");
       }
       else {
@@ -128,7 +128,7 @@ module.exports.actions = function (type, cmd, body, obj) {
         else if (statusArr[index].type == 1) {type = "Streaming";}
         else if (statusArr[index].type == 2) {type = "Listening to";}
         else if (statusArr[index].type == 3) {type = "Watching";}
-        obj.channel.createMessage("Removing `" + type + " " + statusArr[index].name + "`.")
+        obj.channel.createMessage("Removing `" + type + " " + statusArr[index].name + "`.");
         statusArr.splice(index, 1);
         settings.set("status", statusArr);
       }
