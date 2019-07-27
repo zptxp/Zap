@@ -6,5 +6,26 @@
     "id of manager 2"
   ],
   "presence": "online",
-  "status": []
+  "status": [],
+  "tickets": {
+    "guildId": "",
+    "pendingCategoryId": "",
+    "activeCategoryId": "",
+    "channelId": "",
+    "otherMessageId": "",
+    "rbMessageId": "",
+    "tMessageId": "",
+    "rpMessageId": "",
+    "psMessageId": "",
+    "psRoleId": "",
+    "rpRoleId": "",
+    "tRoleId": "",
+    "rbRoleId": "",
+    "otherRoleId": "",
+    "psString": "",
+    "rpString": "",
+    "tString": "",
+    "rbString": "",
+    "otherString": ""
+  }
 }
