@@ -166,19 +166,22 @@ module.exports.actions = function (type, cmd, body, obj) {
     else {
       if (isNumeric(text[0])) {id = text[0]}
       else {id = obj.mentions[0].id}
-      obj.channel.deletePermission(data.get("tickets.channels." + obj.channel.id + ".assigned"));
-      obj.channel.editPermission(id, 3072, 0, "member");
-      data.set("tickets.channels." + obj.channel.id + ".assigned", id);
-      obj.channel.edit({topic: "Department: " + settings.get("tickets." + data.get("tickets.channels." + obj.channel.id + ".dept") + "String") + " | Assigned to <@" + id + ">"})
-      obj.channel.createMessage({
-        content: "<@" + data.get("tickets.channels." + obj.channel.id + ".user") + ">",
-        embed: {
-          title: "Re-assigned",
-          description: "Your ticket has been re-assigned.\nNo further action is required from you.\n\nThank you for your patience.",
-          timestamp: new Date().toISOString(),
-          color: 0x0000FF
-        }
-      })
+      if (id == data.set("tickets.channels." + obj.channel.id + ".assigned")) {obj.channel.createMessage("That user is already assigned to the ticket!")}
+      else {
+        obj.channel.deletePermission(data.get("tickets.channels." + obj.channel.id + ".assigned"));
+        obj.channel.editPermission(id, 3072, 0, "member");
+        data.set("tickets.channels." + obj.channel.id + ".assigned", id);
+        obj.channel.edit({topic: "Department: " + settings.get("tickets." + data.get("tickets.channels." + obj.channel.id + ".dept") + "String") + " | Assigned to <@" + id + ">"})
+        obj.channel.createMessage({
+          content: "<@" + data.get("tickets.channels." + obj.channel.id + ".user") + ">",
+          embed: {
+            title: "Re-assigned",
+            description: "Your ticket has been re-assigned.\nNo further action is required from you.\n\nThank you for your patience.",
+            timestamp: new Date().toISOString(),
+            color: 0x0000FF
+          }
+        })
+      }
     }
   }
 }
