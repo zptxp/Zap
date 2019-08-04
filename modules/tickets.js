@@ -92,6 +92,7 @@ module.exports.actions = function (type, cmd, body, obj) {
     obj.channel.editPermission(obj.author.id, 3072, 0, "member");
     data.set("tickets.channels." + obj.channel.id + ".assigned", obj.author.id);
     obj.channel.edit({topic: "Department: " + settings.get("tickets." + data.get("tickets.channels." + obj.channel.id + ".dept") + "String") + " | Assigned to <@" + obj.author.id + ">", parentID: settings.get("tickets.activeCategoryId")});
+    obj.channel.editPosition(0);
     obj.channel.createMessage({
       content: "<@" + data.get("tickets.channels." + obj.channel.id + ".user") + ">",
       embed: {
