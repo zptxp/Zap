@@ -134,7 +134,7 @@ module.exports.actions = function (type, cmd, body, obj) {
       user = bot.users.get(data.get("tickets.channels." + obj.channel.id + ".user"));
       obj.channel.deletePermission(data.get("tickets.channels." + obj.channel.id + ".assigned"));
       obj.channel.deletePermission(originalRoleId);
-      obj.channel.editPermission(settings.get("tickets." + body + "RoleId"), 3072, 0);
+      obj.channel.editPermission(settings.get("tickets." + body + "RoleId"), 3072, 0, "role");
       data.set("tickets.channels." + obj.channel.id + ".assigned", "pending");
       data.set("tickets.channels." + obj.channel.id + ".dept", body);
       obj.channel.edit({name: body + "-" + user.username, topic: "Department: " + settings.get("tickets." + body + "String") + " | Pending", parentID: settings.get("tickets.pendingCategoryId")});
