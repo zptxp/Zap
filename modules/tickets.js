@@ -2,6 +2,7 @@ var bot = require("../bot.js").bot;
 var settings = require("../bot.js").settings;
 var data = require("../bot.js").data;
 getRndInteger = require("../bot.js").getRndInteger;
+isNumeric = require("../bot.js").isNumeric;
 function findAvailableStaff(department) {
   if (department == "ps") {
     members = bot.guilds.get(settings.get("tickets.guildId")).members.filter(function(member){return member.roles.find(function(role){return role == settings.get("tickets.psRoleId")})});
@@ -30,7 +31,7 @@ function findAvailableStaff(department) {
 }
 
 module.exports.tickets = setInterval(function() {}, 1000);
-module.exports.commands = [{cmd: "pending", desc: "Send a ticket back to pending.", perm: []}];
+module.exports.commands = [{cmd: "pending", desc: "Send a ticket back to pending.", perm: []}, {cmd: "assign", desc: "Assign a ticket to another user.", perm: []}];
 module.exports.events = ["messageReactionAdd", "messageCreate"];
 module.exports.actions = function (type, cmd, body, obj) {
   if (type == "messageReactionAdd" && obj[0].channel.id == settings.get("tickets.channelId") && obj[1].name == "📩") {
@@ -114,7 +115,7 @@ module.exports.actions = function (type, cmd, body, obj) {
     }
     else if (body == "") {
       obj.channel.deletePermission(data.get("tickets.channels." + obj.channel.id + ".assigned"));
-      obj.channel.editPermission(settings.get("tickets." + data.get("tickets.channels." + obj.channel.id + ".dept") + "RoleId"), 3072, 0);
+      obj.channel.editPermission(settings.get("tickets." + data.get("tickets.channels." + obj.channel.id + ".dept") + "RoleId"), 3072, 0, "role");
       data.set("tickets.channels." + obj.channel.id + ".assigned", "pending");
       obj.channel.edit({topic: "Department: " + settings.get("tickets." + data.get("tickets.channels." + obj.channel.id + ".dept") + "String") + " | Pending", parentID: settings.get("tickets.pendingCategoryId")});
       obj.channel.createMessage({
@@ -150,6 +151,34 @@ module.exports.actions = function (type, cmd, body, obj) {
     }
     else {
       obj.channel.createMessage("Something went wrong. You may have specified an invalid department. (Please only use department codes: `ps`, `rp`, `t`, `rb`, `other`)")
+    }
+  }
+  else if (type == "command" && cmd == "assign") {
+    text = body.split(" ");
+    if (obj.member.guild.id != settings.get("tickets.guildId")) {obj.channel.createMessage("This is not the configured guild!")}
+    else if (!obj.member.roles.includes(settings.get("tickets.otherRoleId"))) {
+      obj.channel.createMessage("You are not a Support member!")
+    }
+    else if (obj.channel.parentID != settings.get("tickets.activeCategoryId")) {
+      obj.channel.createMessage("This command can only be run in an active ticket.")
+    }
+    else if (body == "" || !isNumeric(text[0]) && obj.mentions.length == 0) {obj.channel.createMessage("Please specify a user to assign the ticket to.")}
+    else {
+      if (isNumeric(text[0])) {id = text[0]}
+      else {id = obj.mentions[0].id}
+      obj.channel.deletePermission(data.get("tickets.channels." + obj.channel.id + ".assigned"));
+      obj.channel.editPermission(id, 3072, 0, "member");
+      data.set("tickets.channels." + obj.channel.id + ".assigned", id);
+      obj.channel.edit({topic: "Department: " + settings.get("tickets." + data.get("tickets.channels." + obj.channel.id + ".dept") + "String") + " | Assigned to <@" + id + ">"})
+      obj.channel.createMessage({
+        content: "<@" + data.get("tickets.channels." + obj.channel.id + ".user") + ">",
+        embed: {
+          title: "Re-assigned",
+          description: "Your ticket has been re-assigned.\nNo further action is required from you.\n\nThank you for your patience.",
+          timestamp: new Date().toISOString(),
+          color: 0x0000FF
+        }
+      })
     }
   }
 }
