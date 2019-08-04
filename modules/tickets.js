@@ -30,8 +30,10 @@ function findAvailableStaff(department) {
   }
 }
 
-module.exports.tickets = setInterval(function() {}, 1000);
-module.exports.commands = [{cmd: "pending", desc: "Send a ticket back to pending.", perm: []}, {cmd: "assign", desc: "Assign a ticket to another user.", perm: []}];
+module.exports.tickets = setInterval(function() {
+  
+}, 60000);
+module.exports.commands = [{cmd: "pending", desc: "Send a ticket back to pending.", perm: []}, {cmd: "assign", desc: "Assign a ticket to another user.", perm: []}, {cmd: "solve", desc: "Solve a ticket.", perm: []}, {cmd: "resolve", desc: "Alias to `solve`", perm: []}];
 module.exports.events = ["messageReactionAdd", "messageCreate"];
 module.exports.actions = function (type, cmd, body, obj) {
   if (type == "messageReactionAdd" && obj[0].channel.id == settings.get("tickets.channelId") && obj[1].name == "📩") {
@@ -65,7 +67,6 @@ module.exports.actions = function (type, cmd, body, obj) {
         data.set("tickets.channels." + channel.id + ".dept", department);
         data.set("tickets.channels." + channel.id + ".pendingTime", new Date().toISOString())
         data.set("tickets.users." + obj[2], channel.id);
-        // possibly store department when i actually implement more of tickets and transcripts
       })
     }
     else {
@@ -80,13 +81,41 @@ module.exports.actions = function (type, cmd, body, obj) {
       })
     }
   }
-  else if (type == "messageReactionAdd" && data.get("tickets.channels." + obj[0].channel.id + ".user") == obj[2] && obj[1].name == "🔒" && obj[2] != "596326088897200148") {
-    data.del("tickets.channels." + obj[0].channel.id);
-    data.del("tickets.users." + obj[2]);
-    obj[0].channel.delete();
-  }
-  else if (type == "messageReactionAdd" && data.get("tickets.channels." + obj[0].channel.id + ".user") != obj[2] && obj[1].name == "🔒" && obj[2] != "596326088897200148") {
-    bot.removeMessageReaction(obj[0].channel.id, obj[0].id, "🔒", obj[2]);
+  else if (type == "messageReactionAdd" && obj[2] != bot.user.id) {
+    if (data.get("tickets.channels." + obj[0].channel.id + ".user") == obj[2]) {
+      if (obj[1].name == "🔒") {
+        data.del("tickets.channels." + obj[0].channel.id);
+        data.del("tickets.users." + obj[2]);
+        obj[0].channel.delete();
+      }
+      else if (obj[1].name == "👍") {
+        assigned = bot.users.get(data.get("tickets.channels." + obj[0].channel.id + ".assigned"));
+        data.del("tickets.channels." + obj[0].channel.id);
+        data.del("tickets.users." + obj[2]);
+        obj[0].channel.delete();
+        bot.createMessage(settings.get("tickets.notificationChat"), "<@" + assigned.id + "> `" + assigned.username + "#" + assigned.discriminator + "` has received a thumbs up from a ticket rating.");
+      }
+      else if (obj[1].name == "👎") {
+        assigned = bot.users.get(data.get("tickets.channels." + obj[0].channel.id + ".assigned"));
+        data.del("tickets.channels." + obj[0].channel.id);
+        data.del("tickets.users." + obj[2]);
+        obj[0].channel.delete();
+        bot.createMessage(settings.get("tickets.notificationChat"), "<@" + assigned.id + "> `" + assigned.username + "#" + assigned.discriminator + "` has received a thumbs down from a ticket rating.");
+      }
+      else if (obj[1].name == "📂") {
+        user = bot.users.get(data.get("tickets.channels." + obj[0].channel.id + ".user"));
+        obj[0].removeReactions();
+        obj[0].channel.editPermission(data.get("tickets.channels." + obj[0].channel.id + ".user"), 3072, 0, "member");
+        obj[0].channel.editPermission(settings.get("tickets." + data.get("tickets.channels." + obj[0].channel.id + ".dept") + "RoleId"), 3072, 0, "role");
+        data.set("tickets.channels." + obj[0].channel.id + ".assigned", "pending");
+        data.del("tickets.channels." + obj[0].channel.id + ".closeTime");
+        data.set("tickets.channels." + obj[0].channel.id + ".pendingTime", new Date().toISOString());
+        obj[0].channel.edit({name: data.get("tickets.channels." + obj[0].channel.id + ".dept") + "-" + user.username, topic: "Department: " + settings.get("tickets." + data.get("tickets.channels." + obj[0].channel.id + ".dept") + "String") + " | Pending", parentID: settings.get("tickets.pendingCategoryId")})
+      }
+    }
+    else {
+      bot.removeMessageReaction(obj[0].channel.id, obj[0].id, obj[1].name, obj[2]);
+    }
   }
   else if (type == "messageCreate" && obj.channel.parentID == settings.get("tickets.pendingCategoryId") && obj.author.id != data.get("tickets.channels." + obj.channel.id + ".user") && !obj.author.bot) {
     obj.channel.editPermission(settings.get("tickets." + data.get("tickets.channels." + obj.channel.id + ".dept") + "RoleId"), 1024, 2048, "role");
@@ -166,9 +195,10 @@ module.exports.actions = function (type, cmd, body, obj) {
     else {
       if (isNumeric(text[0])) {id = text[0]}
       else {id = obj.mentions[0].id}
-      if (id == data.set("tickets.channels." + obj.channel.id + ".assigned")) {obj.channel.createMessage("That user is already assigned to the ticket!")}
+      if (id == data.get("tickets.channels." + obj.channel.id + ".assigned")) {obj.channel.createMessage("That user is already assigned to the ticket!")}
       else {
-        obj.channel.deletePermission(data.get("tickets.channels." + obj.channel.id + ".assigned"));
+        original = data.get("tickets.channels." + obj.channel.id + ".assigned");
+        obj.channel.deletePermission(original);
         obj.channel.editPermission(id, 3072, 0, "member");
         data.set("tickets.channels." + obj.channel.id + ".assigned", id);
         obj.channel.edit({topic: "Department: " + settings.get("tickets." + data.get("tickets.channels." + obj.channel.id + ".dept") + "String") + " | Assigned to <@" + id + ">"})
@@ -176,12 +206,49 @@ module.exports.actions = function (type, cmd, body, obj) {
           content: "<@" + data.get("tickets.channels." + obj.channel.id + ".user") + ">",
           embed: {
             title: "Re-assigned",
-            description: "Your ticket has been re-assigned.\nNo further action is required from you.\n\nThank you for your patience.",
+            description: "Your ticket has been re-assigned to <@" + id + ">.\nNo further action is required from you.\n\nThank you for your patience.",
             timestamp: new Date().toISOString(),
             color: 0x0000FF
           }
         })
       }
+    }
+  }
+  else if (type == "command" && cmd == "solve" || type == "command" && cmd == "resolve") {
+    if (obj.member.guild.id != settings.get("tickets.guildId")) {obj.channel.createMessage("This is not the configured guild!")}
+    else if (!obj.member.roles.includes(settings.get("tickets.otherRoleId"))) {
+      obj.channel.createMessage("You are not a Support member!")
+    }
+    else if (obj.channel.parentID != settings.get("tickets.activeCategoryId")) {
+      obj.channel.createMessage("This command can only be run in an active ticket.")
+    }
+    else {
+      user = bot.users.get(data.get("tickets.channels." + obj.channel.id + ".user"));
+      assigned = bot.users.get(data.get("tickets.channels." + obj.channel.id + ".assigned"));
+      obj.channel.deletePermission(settings.get("tickets." + data.get("tickets.channels." + obj.channel.id + ".dept") + "RoleId"));
+      obj.channel.deletePermission(data.get("tickets.channels." + obj.channel.id + ".assigned"));
+      obj.channel.editPermission(data.get("tickets.channels." + obj.channel.id + ".user"), 1024, 2048, "member");
+      obj.channel.edit({name: "closed-" + user.username, topic: "Feedback | Ticket Closed"});
+      obj.channel.editPosition(obj.channel.guild.channels.size);
+      data.set("tickets.channels." + obj.channel.id + ".closeTime", new Date().toISOString());
+      obj.channel.createMessage({
+        content: "<@" + data.get("tickets.channels." + obj.channel.id + ".user") + ">",
+        embed: {
+          title: "Ticket Closed",
+          description: "Your ticket has been marked as resolved.\nTo reopen the ticket, click or tap on the 📂 below.\n\nAlternatively, use the 👍 or 👎 reaction to close the ticket and leave a rating for our support staff, or use the 🔒 reaction to close the ticket.\n\nThis ticket will automatically close in 12 hours.",
+          color: 0xFFD700,
+          timestamp: new Date().toISOString(),
+          footer: {
+            text: assigned.username + "#" + assigned.discriminator,
+            icon_url: assigned.avatarURL
+          }
+        }
+      }).then(function(msg) {
+        msg.addReaction("📂");
+        msg.addReaction("👍");
+        msg.addReaction("👎");
+        msg.addReaction("🔒");
+      })
     }
   }
 }
