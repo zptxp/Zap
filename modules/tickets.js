@@ -31,7 +31,71 @@ function findAvailableStaff(department) {
 }
 
 module.exports.tickets = setInterval(function() {
-  
+  function pValidation(channel) {
+    if (data.get("tickets.channels." + channel.id + ".assigned") == "pending") {return true;}
+    else {return false;}
+  }
+  function cValidation(channel) {
+    if (typeof data.get("tickets.channels." + channel.id + ".closeTime") == "string") {return true;}
+    else {return false;}
+  }
+  channels = bot.guilds.get(settings.get("tickets.guildId")).channels.filter(pValidation);
+  cChannels = bot.guilds.get(settings.get("tickets.guildId")).channels.filter(cValidation);
+  n = 0;
+  nn = 0;
+  while (n < channels.length) {
+    if (new Date() - new Date(data.get("tickets.channels." + channels[n].id + ".pendingTime")) >= 3600000) {
+      staffId = findAvailableStaff(data.get("tickets.channels." + channels[n].id + ".dept"));
+      channels[n].editPermission(settings.get("tickets." + data.get("tickets.channels." + channels[n].id + ".dept") + "RoleId"), 1024, 2048, "role");
+      channels[n].editPermission(staffId, 3072, 0, "member");
+      data.set("tickets.channels." + channels[n].id + ".assigned", staffId);
+      obj.channel.edit({topic: "Department: " + settings.get("tickets." + data.get("tickets.channels." + channels[n].id + ".dept") + "String") + " | Assigned to <@" + staffId + ">", parentID: settings.get("tickets.activeCategoryId")});
+      obj.channel.editPosition(0);
+      obj.channel.createMessage({
+        content: "<@" + data.get("tickets.channels." + channels[n].id + ".user") + ">",
+        embed: {
+          title: "Claimed (Automatically Assigned)",
+          description: "Your ticket has been automatically assigned to <@" + channels[n].id + ">!",
+          timestamp: new Date().toISOString(),
+          color: 0x00FF00
+        }
+      })
+      data.del("tickets.channels." + channels[n].id + ".pendingTime");
+    }
+    n++;
+  }
+  while (nn < cChannels.length) {
+    if (new Date() - new Date(data.get("tickets.channels." + cChannels[nn].id + ".closeTime")) >= 43200000) {
+      user = bot.users.get(data.get("tickets.channels." + cChannels[nn].id + ".user"));
+      assigned = bot.users.get(data.get("tickets.channels." + cChannels[nn].id + ".assigned"));
+      data.del("tickets.channels." + cChannels[nn].id);
+      data.del("tickets.users." + user.id);
+      cChannels[nn].delete();
+      bot.createMessage(settings.get("tickets.notificationChat"), {
+        embed: {
+          title: "Ticket Closed",
+          description: "Closed a ticket automatically after 12 hours of resolve state.",
+          fields: [
+            {
+              name: "Ticket Owner",
+              value: "**" + user.username + "#" + user.discriminator + "** `" + user.id + "`"
+            },
+            {
+              name: "Ticket Assigned",
+              value: "**" + assigned.username + "#" + assigned.discriminator + "** `" + assigned.id + "`"
+            },
+            {
+              name: "Rating",
+              value: "None"
+            }
+          ],
+          timestamp: new Date().toISOString(),
+          color: 0xFFD700
+        }
+      })
+    }
+    nn++;
+  }
 }, 60000);
 module.exports.commands = [{cmd: "pending", desc: "Send a ticket back to pending.", perm: []}, {cmd: "assign", desc: "Assign a ticket to another user.", perm: []}, {cmd: "solve", desc: "Solve a ticket.", perm: []}, {cmd: "resolve", desc: "Alias to `solve`", perm: []}];
 module.exports.events = ["messageReactionAdd", "messageCreate"];
@@ -84,23 +148,91 @@ module.exports.actions = function (type, cmd, body, obj) {
   else if (type == "messageReactionAdd" && obj[2] != bot.user.id) {
     if (data.get("tickets.channels." + obj[0].channel.id + ".user") == obj[2]) {
       if (obj[1].name == "🔒") {
+        user = bot.users.get(data.get("tickets.channels." + obj[0].channel.id + ".user"));
+        assigned = bot.users.get(data.get("tickets.channels." + obj[0].channel.id + ".assigned"));
         data.del("tickets.channels." + obj[0].channel.id);
         data.del("tickets.users." + obj[2]);
         obj[0].channel.delete();
+        bot.createMessage(settings.get("tickets.notificationChat"), {
+          embed: {
+            title: "Ticket Closed",
+            description: "Closed a ticket by user request.",
+            fields: [
+              {
+                name: "Ticket Owner",
+                value: "**" + user.username + "#" + user.discriminator + "** `" + user.id + "`"
+              },
+              {
+                name: "Ticket Assigned",
+                value: "**" + assigned.username + "#" + assigned.discriminator + "** `" + assigned.id + "`"
+              },
+              {
+                name: "Rating",
+                value: "None"
+              }
+            ],
+            timestamp: new Date().toISOString(),
+            color: 0xFFD700
+          }
+        })
       }
       else if (obj[1].name == "👍") {
+        user = bot.users.get(data.get("tickets.channels." + obj[0].channel.id + ".user"));
         assigned = bot.users.get(data.get("tickets.channels." + obj[0].channel.id + ".assigned"));
         data.del("tickets.channels." + obj[0].channel.id);
         data.del("tickets.users." + obj[2]);
         obj[0].channel.delete();
-        bot.createMessage(settings.get("tickets.notificationChat"), "<@" + assigned.id + "> `" + assigned.username + "#" + assigned.discriminator + "` has received a thumbs up from a ticket rating.");
+        bot.createMessage(settings.get("tickets.notificationChat"), {
+          embed: {
+            title: "Ticket Closed",
+            description: "Closed a ticket by user request.",
+            fields: [
+              {
+                name: "Ticket Owner",
+                value: "**" + user.username + "#" + user.discriminator + "** `" + user.id + "`"
+              },
+              {
+                name: "Ticket Assigned",
+                value: "**" + assigned.username + "#" + assigned.discriminator + "** `" + assigned.id + "`"
+              },
+              {
+                name: "Rating",
+                value: "👍"
+              }
+            ],
+            timestamp: new Date().toISOString(),
+            color: 0xFFD700
+          }
+        })
       }
       else if (obj[1].name == "👎") {
+        user = bot.users.get(data.get("tickets.channels." + obj[0].channel.id + ".user"));
         assigned = bot.users.get(data.get("tickets.channels." + obj[0].channel.id + ".assigned"));
         data.del("tickets.channels." + obj[0].channel.id);
         data.del("tickets.users." + obj[2]);
         obj[0].channel.delete();
-        bot.createMessage(settings.get("tickets.notificationChat"), "<@" + assigned.id + "> `" + assigned.username + "#" + assigned.discriminator + "` has received a thumbs down from a ticket rating.");
+        bot.createMessage(settings.get("tickets.notificationChat"), {
+          embed: {
+            title: "Ticket Closed",
+            description: "Closed a ticket by user request.",
+            fields: [
+              {
+                name: "Ticket Owner",
+                value: "**" + user.username + "#" + user.discriminator + "** `" + user.id + "`"
+              },
+              {
+                name: "Ticket Assigned",
+                value: "**" + assigned.username + "#" + assigned.discriminator + "** `" + assigned.id + "`"
+              },
+              {
+                name: "Rating",
+                value: "👎"
+              }
+            ],
+            timestamp: new Date().toISOString(),
+            color: 0xFFD700
+          }
+        })
       }
       else if (obj[1].name == "📂") {
         user = bot.users.get(data.get("tickets.channels." + obj[0].channel.id + ".user"));
@@ -110,7 +242,8 @@ module.exports.actions = function (type, cmd, body, obj) {
         data.set("tickets.channels." + obj[0].channel.id + ".assigned", "pending");
         data.del("tickets.channels." + obj[0].channel.id + ".closeTime");
         data.set("tickets.channels." + obj[0].channel.id + ".pendingTime", new Date().toISOString());
-        obj[0].channel.edit({name: data.get("tickets.channels." + obj[0].channel.id + ".dept") + "-" + user.username, topic: "Department: " + settings.get("tickets." + data.get("tickets.channels." + obj[0].channel.id + ".dept") + "String") + " | Pending", parentID: settings.get("tickets.pendingCategoryId")})
+        obj[0].channel.edit({name: data.get("tickets.channels." + obj[0].channel.id + ".dept") + "-" + user.username, topic: "Department: " + settings.get("tickets." + data.get("tickets.channels." + obj[0].channel.id + ".dept") + "String") + " | Pending", parentID: settings.get("tickets.pendingCategoryId")});
+        obj[0].channel.createMessage("Ticket reopened. To close the ticket, use the 🔒 in the pinned message.");
       }
     }
     else {
