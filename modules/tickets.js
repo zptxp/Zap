@@ -49,9 +49,9 @@ module.exports.tickets = setInterval(function() {
       channels[n].editPermission(settings.get("tickets." + data.get("tickets.channels." + channels[n].id + ".dept") + "RoleId"), 1024, 2048, "role");
       channels[n].editPermission(staffId, 3072, 0, "member");
       data.set("tickets.channels." + channels[n].id + ".assigned", staffId);
-      obj.channel.edit({topic: "Department: " + settings.get("tickets." + data.get("tickets.channels." + channels[n].id + ".dept") + "String") + " | Assigned to <@" + staffId + ">", parentID: settings.get("tickets.activeCategoryId")});
-      obj.channel.editPosition(0);
-      obj.channel.createMessage({
+      channels[n].edit({topic: "Department: " + settings.get("tickets." + data.get("tickets.channels." + channels[n].id + ".dept") + "String") + " | Assigned to <@" + staffId + ">", parentID: settings.get("tickets.activeCategoryId")});
+      channels[n].editPosition(0);
+      channels[n].createMessage({
         content: "<@" + data.get("tickets.channels." + channels[n].id + ".user") + ">",
         embed: {
           title: "Claimed (Automatically Assigned)",
