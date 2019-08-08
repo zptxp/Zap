@@ -55,7 +55,7 @@ module.exports.tickets = setInterval(function() {
         content: "<@" + data.get("tickets.channels." + channels[n].id + ".user") + ">",
         embed: {
           title: "Claimed (Automatically Assigned)",
-          description: "Your ticket has been automatically assigned to <@" + channels[n].id + ">!",
+          description: "Your ticket has been automatically assigned to <@" + staffId + ">!",
           timestamp: new Date().toISOString(),
           color: 0x00FF00
         }
@@ -98,7 +98,7 @@ module.exports.tickets = setInterval(function() {
   }
 }, 60000);
 module.exports.commands = [{cmd: "pending", desc: "Send a ticket back to pending.", perm: []}, {cmd: "assign", desc: "Assign a ticket to another user.", perm: []}, {cmd: "solve", desc: "Solve a ticket.", perm: []}, {cmd: "resolve", desc: "Alias to `solve`", perm: []}];
-module.exports.events = ["messageReactionAdd", "messageCreate"];
+module.exports.events = ["messageReactionAdd", "messageCreate", "guildMemberRemove"];
 module.exports.actions = function (type, cmd, body, obj) {
   if (type == "messageReactionAdd" && obj[0].channel.id == settings.get("tickets.channelId") && obj[1].name == "📩") {
     bot.removeMessageReaction(obj[0].channel.id, obj[0].id, "📩", obj[2]);
@@ -250,6 +250,35 @@ module.exports.actions = function (type, cmd, body, obj) {
       bot.removeMessageReaction(obj[0].channel.id, obj[0].id, obj[1].name, obj[2]);
     }
   }
+  else if (type == "guildMemberRemove" && obj[0].id == settings.get("tickets.guildId") && typeof data.get("tickets.users." + obj[1].id) == "string") {
+    user = bot.users.get(obj[1].id);
+    assigned = bot.users.get(data.get("tickets.channels." + data.get("tickets.users." + obj[1].id) + ".assigned"));
+    data.del("tickets.channels." + data.get("tickets.users." + obj[1].id));
+    data.del("tickets.users." + obj[1].id);
+    bot.deleteChannel(data.get("tickets.users." + obj[1].id))
+    bot.createMessage(settings.get("tickets.notificationChat"), {
+      embed: {
+        title: "Ticket Closed",
+        description: "Closed a ticket as user is non-existent.",
+        fields: [
+          {
+            name: "Ticket Owner",
+            value: "**" + user.username + "#" + user.discriminator + "** `" + user.id + "`"
+          },
+          {
+            name: "Ticket Assigned",
+            value: "**" + assigned.username + "#" + assigned.discriminator + "** `" + assigned.id + "`"
+          },
+          {
+            name: "Rating",
+            value: "None"
+          }
+        ],
+        timestamp: new Date().toISOString(),
+        color: 0xFFD700
+      }
+    })
+  }
   else if (type == "messageCreate" && obj.channel.parentID == settings.get("tickets.pendingCategoryId") && obj.author.id != data.get("tickets.channels." + obj.channel.id + ".user") && !obj.author.bot) {
     obj.channel.editPermission(settings.get("tickets." + data.get("tickets.channels." + obj.channel.id + ".dept") + "RoleId"), 1024, 2048, "role");
     obj.channel.editPermission(obj.author.id, 3072, 0, "member");
@@ -329,6 +358,7 @@ module.exports.actions = function (type, cmd, body, obj) {
       if (isNumeric(text[0])) {id = text[0]}
       else {id = obj.mentions[0].id}
       if (id == data.get("tickets.channels." + obj.channel.id + ".assigned")) {obj.channel.createMessage("That user is already assigned to the ticket!")}
+      else if (id == data.get("tickets.channels." + obj.channel.id + ".user")) {obj.channel.createMessage("That user owns this ticket!")}
       else {
         original = data.get("tickets.channels." + obj.channel.id + ".assigned");
         obj.channel.deletePermission(original);
