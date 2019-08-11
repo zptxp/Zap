@@ -245,8 +245,6 @@ module.exports.actions = function (type, cmd, body, obj) {
         obj[0].channel.edit({name: data.get("tickets.channels." + obj[0].channel.id + ".dept") + "-" + user.username, topic: "Department: " + settings.get("tickets." + data.get("tickets.channels." + obj[0].channel.id + ".dept") + "String") + " | Pending", parentID: settings.get("tickets.pendingCategoryId")});
         obj[0].channel.createMessage("Ticket reopened. To close the ticket, use the 🔒 in the pinned message.");
       }
-    }
-    else {
       bot.removeMessageReaction(obj[0].channel.id, obj[0].id, obj[1].name, obj[2]);
     }
   }
