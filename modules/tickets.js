@@ -150,6 +150,8 @@ module.exports.actions = function (type, cmd, body, obj) {
       if (obj[1].name == "🔒") {
         user = bot.users.get(data.get("tickets.channels." + obj[0].channel.id + ".user"));
         assigned = bot.users.get(data.get("tickets.channels." + obj[0].channel.id + ".assigned"));
+        if (typeof assigned == "undefined") {assignedString = "None (pending)"}
+        else {assignedString = "**" + assigned.username + "#" + assigned.discriminator + "** `" + assigned.id + "`"}
         data.del("tickets.channels." + obj[0].channel.id);
         data.del("tickets.users." + obj[2]);
         obj[0].channel.delete();
@@ -164,7 +166,7 @@ module.exports.actions = function (type, cmd, body, obj) {
               },
               {
                 name: "Ticket Assigned",
-                value: "**" + assigned.username + "#" + assigned.discriminator + "** `" + assigned.id + "`"
+                value: assignedString
               },
               {
                 name: "Rating",
@@ -179,6 +181,8 @@ module.exports.actions = function (type, cmd, body, obj) {
       else if (obj[1].name == "👍") {
         user = bot.users.get(data.get("tickets.channels." + obj[0].channel.id + ".user"));
         assigned = bot.users.get(data.get("tickets.channels." + obj[0].channel.id + ".assigned"));
+        if (typeof assigned == "undefined") {assignedString = "None (pending)"}
+        else {assignedString = "**" + assigned.username + "#" + assigned.discriminator + "** `" + assigned.id + "`"}
         data.del("tickets.channels." + obj[0].channel.id);
         data.del("tickets.users." + obj[2]);
         obj[0].channel.delete();
@@ -193,7 +197,7 @@ module.exports.actions = function (type, cmd, body, obj) {
               },
               {
                 name: "Ticket Assigned",
-                value: "**" + assigned.username + "#" + assigned.discriminator + "** `" + assigned.id + "`"
+                value: assignedString
               },
               {
                 name: "Rating",
@@ -208,6 +212,8 @@ module.exports.actions = function (type, cmd, body, obj) {
       else if (obj[1].name == "👎") {
         user = bot.users.get(data.get("tickets.channels." + obj[0].channel.id + ".user"));
         assigned = bot.users.get(data.get("tickets.channels." + obj[0].channel.id + ".assigned"));
+        if (typeof assigned == "undefined") {assignedString = "None (pending)"}
+        else {assignedString = "**" + assigned.username + "#" + assigned.discriminator + "** `" + assigned.id + "`"}
         data.del("tickets.channels." + obj[0].channel.id);
         data.del("tickets.users." + obj[2]);
         obj[0].channel.delete();
@@ -222,7 +228,7 @@ module.exports.actions = function (type, cmd, body, obj) {
               },
               {
                 name: "Ticket Assigned",
-                value: "**" + assigned.username + "#" + assigned.discriminator + "** `" + assigned.id + "`"
+                value: assignedString
               },
               {
                 name: "Rating",
@@ -245,19 +251,23 @@ module.exports.actions = function (type, cmd, body, obj) {
         obj[0].channel.edit({name: data.get("tickets.channels." + obj[0].channel.id + ".dept") + "-" + user.username, topic: "Department: " + settings.get("tickets." + data.get("tickets.channels." + obj[0].channel.id + ".dept") + "String") + " | Pending", parentID: settings.get("tickets.pendingCategoryId")});
         obj[0].channel.createMessage("Ticket reopened. To close the ticket, use the 🔒 in the pinned message.");
       }
+    }
+    else if (data.get("tickets.channels." + obj[0].channel.id + ".user") != obj[2] && typeof data.get("tickets.channels." + obj[0].channel.id + ".user") == "string") {
       bot.removeMessageReaction(obj[0].channel.id, obj[0].id, obj[1].name, obj[2]);
     }
   }
   else if (type == "guildMemberRemove" && obj[0].id == settings.get("tickets.guildId") && typeof data.get("tickets.users." + obj[1].id) == "string") {
     user = bot.users.get(obj[1].id);
     assigned = bot.users.get(data.get("tickets.channels." + data.get("tickets.users." + obj[1].id) + ".assigned"));
+    if (typeof assigned == "undefined") {assignedString = "None (pending)"}
+    else {assignedString = "**" + assigned.username + "#" + assigned.discriminator + "** `" + assigned.id + "`"}
     data.del("tickets.channels." + data.get("tickets.users." + obj[1].id));
     data.del("tickets.users." + obj[1].id);
     bot.deleteChannel(data.get("tickets.users." + obj[1].id))
     bot.createMessage(settings.get("tickets.notificationChat"), {
       embed: {
         title: "Ticket Closed",
-        description: "Closed a ticket as user is non-existent.",
+        description: "Closed a ticket as user left the guild.",
         fields: [
           {
             name: "Ticket Owner",
@@ -265,7 +275,7 @@ module.exports.actions = function (type, cmd, body, obj) {
           },
           {
             name: "Ticket Assigned",
-            value: "**" + assigned.username + "#" + assigned.discriminator + "** `" + assigned.id + "`"
+            value: assignedString
           },
           {
             name: "Rating",
@@ -389,8 +399,7 @@ module.exports.actions = function (type, cmd, body, obj) {
       obj.channel.deletePermission(settings.get("tickets." + data.get("tickets.channels." + obj.channel.id + ".dept") + "RoleId"));
       obj.channel.deletePermission(data.get("tickets.channels." + obj.channel.id + ".assigned"));
       obj.channel.editPermission(data.get("tickets.channels." + obj.channel.id + ".user"), 1024, 2048, "member");
-      obj.channel.edit({name: "closed-" + user.username, topic: "Feedback | Ticket Closed"});
-      obj.channel.editPosition(obj.channel.guild.channels.size);
+      obj.channel.edit({name: "closed-" + user.username, topic: "Feedback | Ticket Closed", parentID: settings.get("tickets.closedCategoryId")});
       data.set("tickets.channels." + obj.channel.id + ".closeTime", new Date().toISOString());
       obj.channel.createMessage({
         content: "<@" + data.get("tickets.channels." + obj.channel.id + ".user") + ">",
