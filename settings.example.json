@@ -29,5 +29,9 @@
     "rbString": "",
     "otherString": "",
     "notificationChat": ""
+  },
+  "msu": {
+    "logChat": "",
+    "redemptionChannel": ""
   }
 }

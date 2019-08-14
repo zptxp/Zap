@@ -26,16 +26,40 @@ module.exports.actions = function (type, cmd, body, obj) {
     split = obj.content.split(" ");
     if (split[0].toLowerCase() == "[save]" || split[0] == "#") {
       if (typeof data.get("tickets.channels." + obj.channel.id) == "object") {
-        if (!split[1]) {obj.channel.createMessage("You need to provide something to save!")}
-        else {
-          saveContent = obj.content.substring(split[0].length + 1);
-          if (typeof data.get("tickets.channels." + obj.channel.id + ".saved") == "undefined") {savedArr = [];}
-          else {savedArr = data.get("tickets.channels." + obj.channel.id + ".saved");}
-          savedArr.push(saveContent);
-          data.set("tickets.channels." + obj.channel.id + ".saved", savedArr);
-          obj.channel.createMessage("Successfully saved: `" + saveContent + "`");
+        if (obj.member.roles.includes("Support")) {
+          if (!split[1]) {obj.channel.createMessage("You need to provide something to save!")}
+          else {
+            saveContent = obj.content.substring(split[0].length + 1);
+            if (typeof data.get("tickets.channels." + obj.channel.id + ".saved") == "undefined") {savedArr = [];}
+            else {savedArr = data.get("tickets.channels." + obj.channel.id + ".saved");}
+            savedArr.push(saveContent);
+            data.set("tickets.channels." + obj.channel.id + ".saved", savedArr);
+            obj.channel.createMessage("Successfully saved: `" + saveContent + "`");
+          }
         }
       }
+    }
+    else if (split[0] == "!redeem") {
+      if (obj.channel.id != settings.get("msu.redemptionChannel")) {obj.channel.createMessage("For future usage, please use the <#" + settings.get("msu.redemptionChannel") + "> channel instead.");}
+      bot.createMessage(settings.get("msu.logChat"), {
+        embed: {
+          title: "Upgradr redemption command used",
+          description: "`" + obj.content + "`",
+          fields: [
+            {
+              name: "User",
+              value: "**" + obj.member.username + "#" + obj.member.discriminator + "** `" + obj.member.id + "`",
+              inline: true
+            },
+            {
+              name: "Channel",
+              value: obj.channel.mention,
+              inline: true
+            }
+          ],
+          timestamp: new Date().toISOString()
+        }
+      })
     }
   }
 }
