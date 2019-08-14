@@ -33,7 +33,7 @@ module.exports.actions = function (type, cmd, body, obj) {
           else {savedArr = data.get("tickets.channels." + obj.channel.id + ".saved");}
           savedArr.push(saveContent);
           data.set("tickets.channels." + obj.channel.id + ".saved", savedArr);
-          obj.channel.createMessage("Successfully saved: " + saveContent);
+          obj.channel.createMessage("Successfully saved: `" + saveContent + "`");
         }
       }
     }
