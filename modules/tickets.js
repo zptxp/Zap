@@ -68,6 +68,15 @@ module.exports.tickets = setInterval(function() {
     if (new Date() - new Date(data.get("tickets.channels." + cChannels[nn].id + ".closeTime")) >= 43200000) {
       user = bot.users.get(data.get("tickets.channels." + cChannels[nn].id + ".user"));
       assigned = bot.users.get(data.get("tickets.channels." + cChannels[nn].id + ".assigned"));
+      if (typeof data.get("tickets.channels." + cChannels[nn].id + ".saved") == "object") {
+        save = data.get("tickets.channels." + cChannels[nn].id + ".saved");
+        savedMapped = save.map(str => "`" + str + "`");
+        bot.getDMChannel(user.id).then(function(userChannel) {
+          userChannel.createMessage("Here are the important details in your (closed) ticket:\n" + savedMapped.join("\n"));
+        })
+        saved = savedMapped.join("\n");
+      }
+      else {saved = "None"}
       data.del("tickets.channels." + cChannels[nn].id);
       data.del("tickets.users." + user.id);
       cChannels[nn].delete();
@@ -87,6 +96,10 @@ module.exports.tickets = setInterval(function() {
             {
               name: "Rating",
               value: "None"
+            },
+            {
+              name: "Saved",
+              value: saved
             }
           ],
           timestamp: new Date().toISOString(),
@@ -150,6 +163,15 @@ module.exports.actions = function (type, cmd, body, obj) {
       if (obj[1].name == "🔒") {
         user = bot.users.get(data.get("tickets.channels." + obj[0].channel.id + ".user"));
         assigned = bot.users.get(data.get("tickets.channels." + obj[0].channel.id + ".assigned"));
+        if (typeof data.get("tickets.channels." + obj[0].channel.id + ".saved") == "object") {
+          save = data.get("tickets.channels." + obj[0].channel.id + ".saved");
+          savedMapped = save.map(str => "`" + str + "`");
+          bot.getDMChannel(user.id).then(function(userChannel) {
+            userChannel.createMessage("Here are the important details in your (closed) ticket:\n" + savedMapped.join("\n"));
+          })
+          saved = savedMapped.join("\n");
+        }
+        else {saved = "None"}
         if (typeof assigned == "undefined") {assignedString = "None (pending)"}
         else {assignedString = "**" + assigned.username + "#" + assigned.discriminator + "** `" + assigned.id + "`"}
         data.del("tickets.channels." + obj[0].channel.id);
@@ -171,6 +193,10 @@ module.exports.actions = function (type, cmd, body, obj) {
               {
                 name: "Rating",
                 value: "None"
+              },
+              {
+                name: "Saved",
+                value: saved
               }
             ],
             timestamp: new Date().toISOString(),
@@ -181,6 +207,15 @@ module.exports.actions = function (type, cmd, body, obj) {
       else if (obj[1].name == "👍") {
         user = bot.users.get(data.get("tickets.channels." + obj[0].channel.id + ".user"));
         assigned = bot.users.get(data.get("tickets.channels." + obj[0].channel.id + ".assigned"));
+        if (typeof data.get("tickets.channels." + obj[0].channel.id + ".saved") == "object") {
+          save = data.get("tickets.channels." + obj[0].channel.id + ".saved");
+          savedMapped = save.map(str => "`" + str + "`");
+          bot.getDMChannel(user.id).then(function(userChannel) {
+            userChannel.createMessage("Here are the important details in your (closed) ticket:\n" + savedMapped.join("\n"));
+          })
+          saved = savedMapped.join("\n");
+        }
+        else {saved = "None"}
         if (typeof assigned == "undefined") {assignedString = "None (pending)"}
         else {assignedString = "**" + assigned.username + "#" + assigned.discriminator + "** `" + assigned.id + "`"}
         data.del("tickets.channels." + obj[0].channel.id);
@@ -202,6 +237,10 @@ module.exports.actions = function (type, cmd, body, obj) {
               {
                 name: "Rating",
                 value: "👍"
+              },
+              {
+                name: "Saved",
+                value: saved
               }
             ],
             timestamp: new Date().toISOString(),
@@ -212,6 +251,15 @@ module.exports.actions = function (type, cmd, body, obj) {
       else if (obj[1].name == "👎") {
         user = bot.users.get(data.get("tickets.channels." + obj[0].channel.id + ".user"));
         assigned = bot.users.get(data.get("tickets.channels." + obj[0].channel.id + ".assigned"));
+        if (typeof data.get("tickets.channels." + obj[0].channel.id + ".saved") == "object") {
+          save = data.get("tickets.channels." + obj[0].channel.id + ".saved");
+          savedMapped = save.map(str => "`" + str + "`");
+          bot.getDMChannel(user.id).then(function(userChannel) {
+            userChannel.createMessage("Here are the important details in your (closed) ticket:\n" + savedMapped.join("\n"));
+          })
+          saved = savedMapped.join("\n");
+        }
+        else {saved = "None"}
         if (typeof assigned == "undefined") {assignedString = "None (pending)"}
         else {assignedString = "**" + assigned.username + "#" + assigned.discriminator + "** `" + assigned.id + "`"}
         data.del("tickets.channels." + obj[0].channel.id);
@@ -233,6 +281,10 @@ module.exports.actions = function (type, cmd, body, obj) {
               {
                 name: "Rating",
                 value: "👎"
+              },
+              {
+                name: "Saved",
+                value: saved
               }
             ],
             timestamp: new Date().toISOString(),
@@ -259,6 +311,12 @@ module.exports.actions = function (type, cmd, body, obj) {
   else if (type == "guildMemberRemove" && obj[0].id == settings.get("tickets.guildId") && typeof data.get("tickets.users." + obj[1].id) == "string") {
     user = bot.users.get(obj[1].id);
     assigned = bot.users.get(data.get("tickets.channels." + data.get("tickets.users." + obj[1].id) + ".assigned"));
+    if (typeof data.get("tickets.channels." + data.get("tickets.users." + obj[1].id) + ".saved") == "object") {
+      save = data.get("tickets.channels." + data.get("tickets.users." + obj[1].id) + ".saved");
+      savedMapped = save.map(str => "`" + str + "`");
+      saved = savedMapped.join("\n");
+    }
+    else {saved = "None"}
     if (typeof assigned == "undefined") {assignedString = "None (pending)"}
     else {assignedString = "**" + assigned.username + "#" + assigned.discriminator + "** `" + assigned.id + "`"}
     data.del("tickets.channels." + data.get("tickets.users." + obj[1].id));
@@ -280,6 +338,10 @@ module.exports.actions = function (type, cmd, body, obj) {
           {
             name: "Rating",
             value: "None"
+          },
+          {
+            name: "Saved",
+            value: saved
           }
         ],
         timestamp: new Date().toISOString(),
