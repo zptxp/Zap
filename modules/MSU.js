@@ -26,7 +26,7 @@ module.exports.actions = function (type, cmd, body, obj) {
     split = obj.content.split(" ");
     if (split[0].toLowerCase() == "[save]" || split[0] == "#") {
       if (typeof data.get("tickets.channels." + obj.channel.id) == "object") {
-        if (obj.member.roles.includes("Support")) {
+        if (obj.member.roles.includes(settings.get("tickets.otherRoleId"))) {
           if (!split[1]) {obj.channel.createMessage("You need to provide something to save!")}
           else {
             saveContent = obj.content.substring(split[0].length + 1);
