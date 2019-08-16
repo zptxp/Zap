@@ -39,7 +39,7 @@ module.exports.actions = function (type, cmd, body, obj) {
         }
       }
     }
-    else if (split[0] == "!redeem") {
+    else if (split[0] == "!redeem" && typeof obj.member == "object" && obj.member.guild.id == settings.get("tickets.guildId")) {
       if (obj.channel.id != settings.get("msu.redemptionChannel")) {obj.channel.createMessage("For future usage, please use the <#" + settings.get("msu.redemptionChannel") + "> channel instead.");}
       bot.createMessage(settings.get("msu.logChat"), {
         embed: {
