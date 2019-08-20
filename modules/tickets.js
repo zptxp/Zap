@@ -367,7 +367,7 @@ module.exports.actions = function (type, cmd, body, obj) {
     data.del("tickets.channels." + obj.channel.id + ".pendingTime");
   }
   else if (type == "command" && cmd == "pending") {
-    if (obj.member.guild.id != settings.get("tickets.guildId")) {obj.channel.createMessage("This is not the configured guild!")}
+    if (obj.member.guild.id != settings.get("tickets.guildId")) {obj.channel.createMessage("This command is limited to guilds configured by the bot owner only.")}
     else if (!obj.member.roles.includes(settings.get("tickets.otherRoleId"))) {
       obj.channel.createMessage("You are not a Support member!")
     }
@@ -416,7 +416,7 @@ module.exports.actions = function (type, cmd, body, obj) {
   }
   else if (type == "command" && cmd == "assign") {
     text = body.split(" ");
-    if (obj.member.guild.id != settings.get("tickets.guildId")) {obj.channel.createMessage("This is not the configured guild!")}
+    if (obj.member.guild.id != settings.get("tickets.guildId")) {obj.channel.createMessage("This command is limited to guilds configured by the bot owner only.")}
     else if (!obj.member.roles.includes(settings.get("tickets.otherRoleId"))) {
       obj.channel.createMessage("You are not a Support member!")
     }
@@ -448,7 +448,7 @@ module.exports.actions = function (type, cmd, body, obj) {
     }
   }
   else if (type == "command" && cmd == "solve" || type == "command" && cmd == "resolve") {
-    if (obj.member.guild.id != settings.get("tickets.guildId")) {obj.channel.createMessage("This is not the configured guild!")}
+    if (obj.member.guild.id != settings.get("tickets.guildId")) {obj.channel.createMessage("This command is limited to guilds configured by the bot owner only.")}
     else if (!obj.member.roles.includes(settings.get("tickets.otherRoleId"))) {
       obj.channel.createMessage("You are not a Support member!")
     }
